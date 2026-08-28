@@ -134,56 +134,9 @@ def create_dummy_data():
 
 @st.cache_data(ttl=10)
 def load_data():
-    """Load data (dummy data karena MongoDB belum connect)"""
-    try:
-        # Coba connect ke MongoDB
-        import pymongo
-        client = pymongo.MongoClient('mongodb://localhost:27017', serverSelectionTimeoutMS=5000)
-        client.server_info()  # Test connection
-        
-        # Jika koneksi berhasil, ambil data dari MongoDB
-        db = client['student_performance']
-        collection = db['student_metrics']
-        
-        pipeline = [
-            {"$sort": {"last_activity": -1}},
-            {"$group": {
-                "_id": "$student_id",
-                "name": {"$first": "$name"},
-                "course": {"$first": "$course"},
-                "total_activities": {"$first": "$total_activities"},
-                "logins": {"$first": "$logins"},
-                "views": {"$first": "$views"},
-                "quizzes_taken": {"$first": "$quizzes_taken"},
-                "assignments_submitted": {"$first": "$assignments_submitted"},
-                "avg_quiz_score": {"$first": "$avg_quiz_score"},
-                "avg_assignment_grade": {"$first": "$avg_assignment_grade"},
-                "risk_score": {"$first": "$risk_score"},
-                "risk_level": {"$first": "$risk_level"},
-                "last_activity": {"$first": "$last_activity"}
-            }}
-        ]
-        
-        data = list(collection.aggregate(pipeline))
-        client.close()
-        
-        if data:
-            df = pd.DataFrame(data)
-            df = df.drop(columns=['_id'])
-            # Convert last_activity to string if it's datetime
-            if 'last_activity' in df.columns:
-                df['last_activity'] = pd.to_datetime(df['last_activity']).dt.strftime("%Y-%m-%d %H:%M")
-            return df
-        
-        # Jika data kosong, gunakan dummy
-        st.info("ℹ️ Data kosong di MongoDB, menggunakan dummy data")
-        return create_dummy_data()
-        
-    except Exception as e:
-        # Jika MongoDB tidak tersedia, gunakan dummy data
-        st.warning(f"⚠️ MongoDB tidak tersedia: {str(e)[:100]}...")
-        st.info("💡 Gunakan dummy data untuk demo")
-        return create_dummy_data()
+    """Load dummy data untuk demo dashboard"""
+    st.info("💡 Menggunakan dummy data untuk demo")
+    return create_dummy_data()
 
 # ========== MAIN DASHBOARD ==========
 
@@ -263,17 +216,6 @@ col1, col2 = st.columns(2)
 with col1:
     st.subheader("Risk Level Distribution")
     risk_counts = filtered_df["risk_level"].value_counts()
-    
-    # Warna untuk risk level
-    colors = []
-    for level in risk_counts.index:
-        if "High" in level:
-            colors.append("#dc3545")
-        elif "Medium" in level:
-            colors.append("#ffc107")
-        else:
-            colors.append("#28a745")
-    
     st.bar_chart(risk_counts)
 
 with col2:
@@ -305,7 +247,7 @@ styled_df["risk_score"] = styled_df["risk_score"].apply(lambda x: f"{x:.2%}")
 
 # Apply style
 st.dataframe(
-   styled_df.style.map(highlight_risk, subset=["risk_level"]),
+    styled_df.style.map(highlight_risk, subset=["risk_level"]),
     use_container_width=True,
     height=400
 )
@@ -349,7 +291,7 @@ if st.sidebar.button("🔄 Refresh Data"):
 
 # ========== AUTO REFRESH SETTINGS ==========
 st.sidebar.markdown("---")
-auto_refresh = st.sidebar.checkbox("🔄 Auto-refresh (10s)", value=True)
+auto_refresh = st.sidebar.checkbox("🔄 Auto-refresh (10s)", value=False)
 if auto_refresh:
     time.sleep(10)
     st.rerun()
@@ -360,7 +302,4 @@ st.caption("📌 **Pipeline:** Simulated Data → Apache Kafka → Apache Spark 
 st.caption("🏫 **University:** Timor-Leste | **Course:** Big Data | **Semester:** 2026/2")
 
 # Show data source info
-if "MongoDB" in str(load_data.__wrapped__.__name__) or True:
-    st.sidebar.info("📊 **Data Source:** Dummy Data (MongoDB not connected)")
-else:
-    st.sidebar.success("✅ **Data Source:** MongoDB")
+st.sidebar.info("📊 **Data Source:** Dummy Data (Demo Mode)")
