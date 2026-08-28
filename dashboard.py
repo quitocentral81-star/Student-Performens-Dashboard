@@ -305,7 +305,7 @@ styled_df["risk_score"] = styled_df["risk_score"].apply(lambda x: f"{x:.2%}")
 
 # Apply style
 st.dataframe(
-    styled_df.style.applymap(highlight_risk, subset=["risk_level"]),
+   styled_df.style.map(highlight_risk, subset=["risk_level"]),
     use_container_width=True,
     height=400
 )
